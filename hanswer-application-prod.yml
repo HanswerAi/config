@@ -49,7 +49,7 @@ app:
     micrometer:
       env: prod
 
-interviewmate:
+hanswer:
   ops:
     sticky-session-reminder: false
 

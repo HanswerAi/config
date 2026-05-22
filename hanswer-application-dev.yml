@@ -29,14 +29,14 @@ spring:
 logging:
   level:
     root: INFO
-    com.interviewmate: INFO
+    com.hanswer: INFO
     org.springframework.web: WARN
     org.hibernate.SQL: WARN
 
 server:
   port: ${PORT:8080}
 
-interviewmate:
+hanswer:
   session:
     idle-ttl: 15m
     sweeper-interval: 5m
