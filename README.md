@@ -6,8 +6,8 @@ Externalized Spring configuration served by Spring Cloud Config Server.
 
 | File | Served as |
 |---|---|
-| `interviewmate-application-dev.yml` | `interviewmate-application` app, `dev` profile |
-| `interviewmate-application-prod.yml` | `interviewmate-application` app, `prod` profile |
+| `hanswer-application-dev.yml` | `hanswer-application` app, `dev` profile |
+| `hanswer-application-prod.yml` | `hanswer-application` app, `prod` profile |
 
 Secrets are **not** stored here. Use `${ENV_VAR}` placeholders and provide values through GitHub environment secrets and the VM `/opt/deploy/.env` file.
 
