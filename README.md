@@ -8,6 +8,7 @@ Externalized Spring configuration served by Spring Cloud Config Server.
 |---|---|
 | `hanswer-application-dev.yml` | `hanswer-application` app, `dev` profile |
 | `hanswer-application-prod.yml` | `hanswer-application` app, `prod` profile |
+| `hanswer-application-test.yml` | `hanswer-application` app, `test` profile (backend integration tests) |
 
 Secrets are **not** stored here. Use `${ENV_VAR}` placeholders and provide values through GitHub environment secrets and the VM `/opt/deploy/.env` file.
 

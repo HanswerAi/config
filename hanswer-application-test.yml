@@ -1,0 +1,60 @@
+# Integration-test profile served by Spring Cloud Config Server.
+# AbstractPostgresSpringBootTest starts a hyness/spring-cloud-config-server
+# container (native profile, mounting this repo at /config) so integration
+# tests resolve config through the same mechanism as deployed dev/prod.
+
+spring:
+  main:
+    lazy-initialization: true
+
+  jpa:
+    hibernate:
+      ddl-auto: none
+    open-in-view: false
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    baseline-version: 0
+    validate-on-migrate: true
+
+  data:
+    redis:
+      timeout: 3s
+
+logging:
+  level:
+    root: INFO
+    com.interviewmate: DEBUG
+    com.hanswer: DEBUG
+    org.springframework.web.reactive.function.client: DEBUG
+
+app:
+  auth:
+    # Fixed values so IntegrationJwtTokens can mint tokens deterministically.
+    jwt-secret: integration-test-jwt-secret-must-be-long-enough-for-hs256-xx
+    refresh-secret: integration-test-refresh-secret-must-be-long-enough-yy
+    jwt-expires-in: 1h
+    refresh-expires-in: 7d
+
+  public:
+    web-url: http://localhost:3000
+
+  cors:
+    origin: http://localhost:3000
+
+  billing:
+    simulated-credit-purchase-enabled: false
+
+interviewmate:
+  session:
+    idle-ttl: 15m
+    sweeper-interval: 5m
+    last-seen-throttle: 2m
+  spring-ai:
+    enabled: false
+  tests:
+    openai:
+      enabled: false
+      model: gpt-4o-mini
