@@ -1,0 +1,100 @@
+# Deployed dev environment (api-dev.hanswerai.com). Secrets must come from env / GH Environment.
+
+spring:
+  datasource:
+    url: ${DATABASE_URL}
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+      data-source-properties:
+        prepareThreshold: 0
+        preferredQueryMode: simple
+
+  jpa:
+    hibernate:
+      ddl-auto: none
+    open-in-view: false
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+  data:
+    redis:
+      url: ${SPRING_DATA_REDIS_URL:redis://redis:6379}
+
+logging:
+  level:
+    root: INFO
+    com.interviewmate: INFO
+    org.springframework.web: WARN
+    org.hibernate.SQL: WARN
+
+server:
+  port: ${PORT:8080}
+
+interviewmate:
+  session:
+    idle-ttl: 15m
+    sweeper-interval: 5m
+    last-seen-throttle: 2m
+
+app:
+  auth:
+    jwt-secret: ${JWT_SECRET}
+    jwt-expires-in: ${JWT_EXPIRES_IN:7d}
+    refresh-secret: ${JWT_REFRESH_SECRET}
+    refresh-expires-in: ${JWT_REFRESH_EXPIRES_IN:30d}
+
+  google:
+    oauth:
+      client-id: ${GOOGLE_OAUTH_CLIENT_ID}
+
+  supabase:
+    url: ${SUPABASE_URL}
+    anon-key: ${SUPABASE_ANON_KEY}
+    service-role-key: ${SUPABASE_SERVICE_ROLE_KEY}
+    storage-bucket: ${SUPABASE_STORAGE_BUCKET:ATS-DOCS}
+
+  deepgram:
+    api-key: ${DEEPGRAM_API_KEY}
+
+  llm:
+    openai:
+      api-key: ${OPENAI_API_KEY}
+
+  stripe:
+    secret-key: ${STRIPE_SECRET_KEY}
+    webhook-secret: ${STRIPE_WEBHOOK_SECRET}
+    price-standard: ${STRIPE_PRICE_STANDARD:}
+
+  public:
+    web-url: ${APP_PUBLIC_WEB_URL:https://dev.hanswerai.com}
+
+  cors:
+    origin: ${CORS_ORIGIN:https://dev.hanswerai.com}
+
+  billing:
+    simulated-credit-purchase-enabled: ${SIMULATED_CREDIT_PURCHASE:false}
+
+  observability:
+    backend-pipeline: ${OBSERVABILITY_BACKEND_PIPELINE:LOGZIO}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+
+spring.config.activate.on-profile: posthog
+
+app:
+  observability:
+    backend-pipeline: POSTHOG
+
+management:
+  tracing:
+    enabled: false

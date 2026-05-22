@@ -1,0 +1,77 @@
+spring:
+  datasource:
+    url: ${DATABASE_URL}
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      data-source-properties:
+        prepareThreshold: 0
+        preferredQueryMode: simple
+
+  jpa:
+    hibernate:
+      ddl-auto: none
+    open-in-view: false
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+  data:
+    redis:
+      url: ${SPRING_DATA_REDIS_URL:redis://redis:6379}
+
+app:
+  auth:
+    jwt-secret: ${JWT_SECRET}
+    refresh-secret: ${JWT_REFRESH_SECRET}
+
+  supabase:
+    url: ${SUPABASE_URL}
+    anon-key: ${SUPABASE_ANON_KEY}
+    service-role-key: ${SUPABASE_SERVICE_ROLE_KEY}
+    storage-bucket: ${SUPABASE_STORAGE_BUCKET:ATS-DOCS}
+
+  public:
+    web-url: ${APP_PUBLIC_WEB_URL:https://hanswerai.com}
+
+  cors:
+    origin: ${CORS_ORIGIN:https://hanswerai.com}
+
+  billing:
+    simulated-credit-purchase-enabled: false
+
+  logzio:
+    otlp:
+      service-name: "Hanswer Prod"
+    micrometer:
+      env: prod
+
+interviewmate:
+  ops:
+    sticky-session-reminder: false
+
+# Activate with SPRING_PROFILES_ACTIVE=prod,logzio (tokens via .env).
+spring.config.activate.on-profile: logzio
+
+app:
+  logzio:
+    otlp:
+      enabled: true
+      token: ${LOGZIO_LOGS_TOKEN:${LOGZIO_OTLP_TOKEN:}}
+    micrometer:
+      enabled: ${LOGZIO_MICROMETER_ENABLED:true}
+      token: ${LOGZIO_METRICS_TOKEN:${LOGZIO_MICROMETER_TOKEN:}}
+    tracing:
+      enabled: ${LOGZIO_OTEL_TRACES_ENABLED:true}
+      endpoint: ${LOGZIO_OTLP_TRACES_ENDPOINT:https://otlp-listener.logz.io/v1/traces}
+      token: ${LOGZIO_TRACES_TOKEN:}
+      user-agent: logzio-opentelemetry-traces
+
+management:
+  tracing:
+    enabled: true
+    sampling:
+      probability: 1.0
