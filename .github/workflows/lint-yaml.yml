@@ -8,20 +8,53 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: lint-yaml-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   lint:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        timeout-minutes: 2
+
+      - name: yamllint
+        uses: ibiqlik/action-yamllint@2576378a8e339169678f9939646ee3ee325e845c # v3
+        timeout-minutes: 3
         with:
-          python-version: "3.12"
-      - run: pip install pyyaml
-      - name: Validate YAML
+          file_or_dir: .
+          config_data: |
+            extends: default
+            rules:
+              line-length:
+                max: 160
+                level: warning
+              comments:
+                min-spaces-from-content: 1
+              truthy:
+                allowed-values: ['true', 'false', 'on', 'off']
+              braces:
+                forbid: false
+              document-start: disable
+
+      - name: Install actionlint (checksum verified)
+        timeout-minutes: 3
+        env:
+          ACTIONLINT_VERSION: 1.7.12
         run: |
-          python3 - <<'PY'
-          import pathlib, yaml
-          for path in pathlib.Path('.').glob('*.yml'):
-              yaml.safe_load(path.read_text())
-              print('OK', path)
-          PY
+          set -euo pipefail
+          BASE="https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}"
+          curl -fsSL "${BASE}/actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz" -o actionlint.tar.gz
+          curl -fsSL "${BASE}/actionlint_${ACTIONLINT_VERSION}_checksums.txt" -o checksums.txt
+          grep "actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz" checksums.txt | sha256sum -c -
+          tar -xzf actionlint.tar.gz actionlint
+          chmod +x actionlint
+          ./actionlint --version
+
+      - name: Run actionlint
+        timeout-minutes: 2
+        run: ./actionlint -color
