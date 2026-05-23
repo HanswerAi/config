@@ -8,20 +8,56 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: lint-yaml-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   lint:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+        timeout-minutes: 2
+
+      # yamllint catches duplicate keys, anchor abuse, indentation drift, and
+      # trailing whitespace -- all things `yaml.safe_load` happily accepts.
+      # We check every YAML file (config repo is mostly Spring application-*.yml).
+      - name: yamllint
+        uses: ibiqlik/action-yamllint@v3
+        timeout-minutes: 3
         with:
-          python-version: "3.12"
-      - run: pip install pyyaml
-      - name: Validate YAML
+          file_or_dir: .
+          config_data: |
+            extends: default
+            rules:
+              line-length:
+                max: 160
+                level: warning
+              comments:
+                min-spaces-from-content: 1
+              # Spring config files often have inline-flow lists that yamllint's
+              # default truthy rule false-flags as 'on'/'off' values.
+              truthy:
+                allowed-values: ['true', 'false', 'on', 'off']
+              # Tolerate brace-less style commonly used in Spring application.yml.
+              braces:
+                forbid: false
+              # Tolerate document-start variation across files.
+              document-start: disable
+
+      # actionlint validates the workflow files in this repo for shellcheck
+      # issues, expression syntax, deprecated nodes, and unknown runner labels --
+      # categories yamllint alone won't catch. Use the upstream-published
+      # download script (rhysd/actionlint does not publish a first-party action;
+      # the script pins to the latest release).
+      - name: Install actionlint
+        timeout-minutes: 2
         run: |
-          python3 - <<'PY'
-          import pathlib, yaml
-          for path in pathlib.Path('.').glob('*.yml'):
-              yaml.safe_load(path.read_text())
-              print('OK', path)
-          PY
+          set -euo pipefail
+          bash <(curl -fsSL https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash) 1.7.12
+          ./actionlint --version
+
+      - name: Run actionlint
+        timeout-minutes: 2
+        run: ./actionlint -color

@@ -89,6 +89,10 @@ management:
       exposure:
         include: health,info,metrics,prometheus
 
+---
+# Activate with SPRING_PROFILES_ACTIVE=dev,posthog. The `---` separator is
+# required so Spring treats the block below as a profile-conditional document
+# (Spring Boot 2.4+ multi-document YAML).
 spring.config.activate.on-profile: posthog
 
 app:

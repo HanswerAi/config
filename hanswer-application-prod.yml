@@ -53,7 +53,10 @@ hanswer:
   ops:
     sticky-session-reminder: false
 
+---
 # Activate with SPRING_PROFILES_ACTIVE=prod,logzio (tokens via .env).
+# The `---` separator is required so Spring treats the block below as a
+# profile-conditional document (Spring Boot 2.4+ multi-document YAML).
 spring.config.activate.on-profile: logzio
 
 app:
