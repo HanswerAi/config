@@ -1,0 +1,27 @@
+{
+  "name": "branch-creation-guard",
+  "target": "branch",
+  "enforcement": "active",
+  "conditions": {
+    "ref_name": {
+      "include": [
+        "refs/heads/main",
+        "refs/heads/dev",
+        "refs/heads/release/**"
+      ],
+      "exclude": []
+    }
+  },
+  "rules": [
+    {
+      "type": "creation"
+    }
+  ],
+  "bypass_actors": [
+    {
+      "actor_id": 1697708,
+      "actor_type": "User",
+      "bypass_mode": "always"
+    }
+  ]
+}
