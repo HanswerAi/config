@@ -47,3 +47,7 @@ interviewmate:
   spring-ai:
     openai:
       api-key: ${OPENAI_API_KEY}
+    openrouter:
+      api-key: ${OPENROUTER_API_KEY}
+    minimax:
+      api-key: ${MINIMAX_API_KEY}
