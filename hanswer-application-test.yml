@@ -1,0 +1,33 @@
+# =============================================================================
+# Integration test profile (served by Spring Cloud Config via Testcontainers).
+#
+# Mirrors dev Supabase URLs so JwtDecoder boots against real JWKS. JDBC/Redis
+# are overridden at runtime by AbstractPostgresSpringBootTest system properties.
+# =============================================================================
+
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # Real dev Supabase issuer so JwtDecoder boots; tokens validated against JWKS.
+          issuer-uri: https://ydctjwgkjwhnxbqlzfgy.supabase.co/auth/v1
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+app:
+  auth:
+    # Stable per-run secrets for IntegrationJwtTokens to sign app-issued tokens.
+    jwt-secret: ${JWT_SECRET:test-jwt-secret-32-chars-minimum-aaaaaa}
+    refresh-secret: ${JWT_REFRESH_SECRET:test-refresh-secret-32-chars-minimum-aaaaaa}
+
+  supabase:
+    url: https://ydctjwgkjwhnxbqlzfgy.supabase.co
+    anon-key: ${SUPABASE_ANON_KEY:test-anon-key}
+    service-role-key: ${SUPABASE_SERVICE_ROLE_KEY:test-service-role-key}
+
+  google:
+    oauth:
+      client-id: ${GOOGLE_OAUTH_CLIENT_ID:test-google-client-id}

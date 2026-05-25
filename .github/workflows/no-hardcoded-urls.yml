@@ -48,10 +48,11 @@ jobs:
         run: |
           set -euo pipefail
           BASE="https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}"
-          curl -fsSL "${BASE}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" -o gitleaks.tar.gz
+          ARCHIVE="gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          curl -fsSL "${BASE}/${ARCHIVE}" -o "${ARCHIVE}"
           curl -fsSL "${BASE}/gitleaks_${GITLEAKS_VERSION}_checksums.txt" -o checksums.txt
-          grep "gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" checksums.txt | sha256sum -c -
-          tar -xzf gitleaks.tar.gz gitleaks
+          grep " ${ARCHIVE}$" checksums.txt | sha256sum -c -
+          tar -xzf "${ARCHIVE}" gitleaks
           chmod +x gitleaks
           ./gitleaks version
 
