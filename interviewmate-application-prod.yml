@@ -1,4 +1,16 @@
+# =============================================================================
+# Production environment (api.hanswerai.com, hanswerai.com).
+# Same shape as dev — different concrete defaults (region, replicas, sampling).
+# All secrets supplied by env (GitHub Environment `prod`); never literals here.
+# =============================================================================
+
 spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${SUPABASE_JWT_ISSUER_URI}
+
   datasource:
     url: ${DATABASE_URL}
     username: ${DB_USER}
@@ -21,18 +33,55 @@ spring:
 
   data:
     redis:
-      url: ${SPRING_DATA_REDIS_URL:redis://redis:6379}
+      # Production Upstash DB (TLS). Set host when prod Upstash DB exists; password from env secret REDIS_HOST_PWD.
+      url: rediss://default:${REDIS_HOST_PWD}@TODO_PROD_REDIS_HOST:6379
 
 app:
   auth:
     jwt-secret: ${JWT_SECRET}
     refresh-secret: ${JWT_REFRESH_SECRET}
 
+  google:
+    oauth:
+      client-id: ${GOOGLE_OAUTH_CLIENT_ID}
+
   supabase:
     url: ${SUPABASE_URL}
     anon-key: ${SUPABASE_ANON_KEY}
     service-role-key: ${SUPABASE_SERVICE_ROLE_KEY}
     storage-bucket: ${SUPABASE_STORAGE_BUCKET:ATS-DOCS}
+
+  deepgram:
+    api-key: ${DEEPGRAM_API_KEY}
+
+  stt:
+    deepgram:
+      api-key: ${DEEPGRAM_API_KEY}
+      api-endpoint: ${DEEPGRAM_API_ENDPOINT:https://api.deepgram.com/v1/listen}
+      websocket-endpoint: ${DEEPGRAM_WS_ENDPOINT:wss://api.deepgram.com/v1/listen}
+      tts-endpoint: ${DEEPGRAM_TTS_ENDPOINT:https://api.deepgram.com/v1/speak}
+
+  llm:
+    openai:
+      api-key: ${OPENAI_API_KEY}
+      base-url: ${OPENAI_BASE_URL:https://api.openai.com}
+    openrouter:
+      api-key: ${OPENROUTER_API_KEY:}
+      base-url: ${OPENROUTER_BASE_URL:https://openrouter.ai/api/v1}
+    minimax:
+      api-key: ${MINIMAX_API_KEY:}
+      base-url: ${MINIMAX_BASE_URL:https://api.minimax.io/v1}
+    deepseek:
+      api-key: ${DEEPSEEK_API_KEY:}
+      base-url: ${DEEPSEEK_BASE_URL:https://api.deepseek.com}
+    groq:
+      api-key: ${GROQ_API_KEY:}
+      base-url: ${GROQ_BASE_URL:https://api.groq.com/openai/v1}
+
+  stripe:
+    secret-key: ${STRIPE_SECRET_KEY}
+    webhook-secret: ${STRIPE_WEBHOOK_SECRET}
+    price-standard: ${STRIPE_PRICE_STANDARD:}
 
   public:
     web-url: ${APP_PUBLIC_WEB_URL:https://hanswerai.com}
@@ -43,17 +92,24 @@ app:
   billing:
     simulated-credit-purchase-enabled: false
 
+  posthog:
+    api-key: ${POSTHOG_API_KEY:}
+    host: ${POSTHOG_HOST:https://us.i.posthog.com}
+
   logzio:
     otlp:
       service-name: "Hanswer Prod"
+      endpoint: ${LOGZIO_OTLP_ENDPOINT:https://otlp-listener.logz.io/v1/logs}
     micrometer:
       env: prod
+      uri: ${LOGZIO_MICROMETER_URI:https://listener.logz.io:8053}
 
 interviewmate:
   ops:
     sticky-session-reminder: false
 
-# Activate with SPRING_PROFILES_ACTIVE=prod,logzio (tokens via .env).
+---
+# Activate with SPRING_PROFILES_ACTIVE=prod,logzio to enable OTLP shipping.
 spring.config.activate.on-profile: logzio
 
 app:
@@ -74,4 +130,5 @@ management:
   tracing:
     enabled: true
     sampling:
-      probability: 1.0
+      # 100% in dev; consider lowering to 0.1 in prod when traffic grows.
+      probability: ${TRACING_SAMPLE_RATE:1.0}

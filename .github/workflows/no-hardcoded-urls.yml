@@ -1,0 +1,62 @@
+name: no-hardcoded-urls
+
+on:
+  pull_request:
+    branches: [dev, main, "release/**"]
+  push:
+    branches: [dev, main, "release/**"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: no-hardcoded-urls-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+        timeout-minutes: 2
+        with:
+          fetch-depth: 0
+
+      - name: Detect hardcoded secret-shaped literals
+        run: |
+          set -euo pipefail
+          # Config repo: secrets MUST come from ${ENV_VAR} interpolation or
+          # Spring Cloud Config {cipher} values. Surface bare high-entropy
+          # strings next to known secret keys.
+          PATTERN='(jwt-secret|secret-key|webhook-secret|api-key|password|anon-key|service-role-key):\s*(?!\$\{)(?!"\$\{)(?!['\''"]?\{cipher\})(?!")\S{16,}'
+          HITS=$(rg -nP "$PATTERN" -g '*.yml' -g '*.yaml' || true)
+          if [ -n "$HITS" ]; then
+            echo "::error::Hardcoded secret literals in config YAML. Sensitive values must use \${ENV_VAR} interpolation or {cipher}..."
+            echo "$HITS"
+            exit 1
+          fi
+          echo "no hardcoded secret literals in config YAML"
+
+      - name: Install gitleaks (checksum verified)
+        timeout-minutes: 3
+        env:
+          GITLEAKS_VERSION: "8.21.2"
+        run: |
+          set -euo pipefail
+          BASE="https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}"
+          curl -fsSL "${BASE}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" -o gitleaks.tar.gz
+          curl -fsSL "${BASE}/gitleaks_${GITLEAKS_VERSION}_checksums.txt" -o checksums.txt
+          grep "gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" checksums.txt | sha256sum -c -
+          tar -xzf gitleaks.tar.gz gitleaks
+          chmod +x gitleaks
+          ./gitleaks version
+
+      - name: Run gitleaks on full history
+        timeout-minutes: 2
+        run: |
+          set -euo pipefail
+          ./gitleaks detect --redact --no-banner --verbose --source . --report-format sarif --report-path gitleaks.sarif
