@@ -1,9 +1,23 @@
-# Deployed dev environment (api-dev.hanswerai.com). Secrets must come from env / GH Environment.
+# =============================================================================
+# Deployed dev environment (api-dev.hanswerai.com, dev.hanswerai.com).
+#
+# Served by Spring Cloud Config from this repo's `dev` branch (or main, depending
+# on Config Server's `spring.cloud.config.server.git.search-paths` and the
+# `SPRING_CLOUD_CONFIG_LABEL` the backend requests). Secrets MUST come from env
+# vars, never literals — see infra/scripts/migrate-env-to-github-secrets.sh and
+# the docker-compose `.env` on each VM (sourced from GitHub Environment secrets).
+# =============================================================================
 
 spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: https://ydctjwgkjwhnxbqlzfgy.supabase.co/auth/v1
+
   datasource:
-    url: ${DATABASE_URL}
-    username: ${DB_USER}
+    url: jdbc:postgresql://db.ydctjwgkjwhnxbqlzfgy.supabase.co:6543/postgres?sslmode=require
+    username: postgres
     password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
     hikari:
@@ -24,7 +38,8 @@ spring:
 
   data:
     redis:
-      url: ${SPRING_DATA_REDIS_URL:redis://redis:6379}
+      # Upstash dev DB (TLS). Host is non-sensitive config; password from GitHub env secret REDIS_HOST_PWD.
+      url: rediss://default:${REDIS_HOST_PWD}@arriving-crane-104882.upstash.io:6379
 
 logging:
   level:
@@ -54,7 +69,7 @@ app:
       client-id: ${GOOGLE_OAUTH_CLIENT_ID}
 
   supabase:
-    url: ${SUPABASE_URL}
+    url: https://ydctjwgkjwhnxbqlzfgy.supabase.co
     anon-key: ${SUPABASE_ANON_KEY}
     service-role-key: ${SUPABASE_SERVICE_ROLE_KEY}
     storage-bucket: ${SUPABASE_STORAGE_BUCKET:ATS-DOCS}
@@ -62,9 +77,30 @@ app:
   deepgram:
     api-key: ${DEEPGRAM_API_KEY}
 
+  stt:
+    deepgram:
+      api-key: ${DEEPGRAM_API_KEY}
+      # Public Deepgram endpoints (US). Override per env if Deepgram routes regionally.
+      api-endpoint: ${DEEPGRAM_API_ENDPOINT:https://api.deepgram.com/v1/listen}
+      websocket-endpoint: ${DEEPGRAM_WS_ENDPOINT:wss://api.deepgram.com/v1/listen}
+      tts-endpoint: ${DEEPGRAM_TTS_ENDPOINT:https://api.deepgram.com/v1/speak}
+
   llm:
     openai:
       api-key: ${OPENAI_API_KEY}
+      base-url: ${OPENAI_BASE_URL:https://api.openai.com}
+    openrouter:
+      api-key: ${OPENROUTER_API_KEY:}
+      base-url: ${OPENROUTER_BASE_URL:https://openrouter.ai/api/v1}
+    minimax:
+      api-key: ${MINIMAX_API_KEY:}
+      base-url: ${MINIMAX_BASE_URL:https://api.minimax.io/v1}
+    deepseek:
+      api-key: ${DEEPSEEK_API_KEY:}
+      base-url: ${DEEPSEEK_BASE_URL:https://api.deepseek.com}
+    groq:
+      api-key: ${GROQ_API_KEY:}
+      base-url: ${GROQ_BASE_URL:https://api.groq.com/openai/v1}
 
   stripe:
     secret-key: ${STRIPE_SECRET_KEY}
@@ -83,12 +119,35 @@ app:
   observability:
     backend-pipeline: ${OBSERVABILITY_BACKEND_PIPELINE:LOGZIO}
 
+  posthog:
+    api-key: ${POSTHOG_API_KEY:}
+    host: ${POSTHOG_HOST:https://us.i.posthog.com}
+
+  logzio:
+    otlp:
+      enabled: ${LOGZIO_OTLP_ENABLED:false}
+      endpoint: ${LOGZIO_OTLP_ENDPOINT:https://otlp-listener.logz.io/v1/logs}
+      token: ${LOGZIO_LOGS_TOKEN:${LOGZIO_OTLP_TOKEN:}}
+      service-name: "Hanswer Dev"
+    micrometer:
+      enabled: ${LOGZIO_MICROMETER_ENABLED:false}
+      uri: ${LOGZIO_MICROMETER_URI:https://listener.logz.io:8053}
+      token: ${LOGZIO_METRICS_TOKEN:${LOGZIO_MICROMETER_TOKEN:}}
+      env: dev
+      application-name: interviewmate-spring-backend
+    tracing:
+      enabled: ${LOGZIO_OTEL_TRACES_ENABLED:false}
+      endpoint: ${LOGZIO_OTLP_TRACES_ENDPOINT:https://otlp-listener.logz.io/v1/traces}
+      token: ${LOGZIO_TRACES_TOKEN:}
+
 management:
   endpoints:
     web:
       exposure:
         include: health,info,metrics,prometheus
 
+---
+# PostHog-only observability variant. Activate with SPRING_PROFILES_ACTIVE=dev,posthog.
 spring.config.activate.on-profile: posthog
 
 app:

@@ -22,6 +22,6 @@ jobs:
           python3 - <<'PY'
           import pathlib, yaml
           for path in pathlib.Path('.').glob('*.yml'):
-              yaml.safe_load(path.read_text())
+              list(yaml.safe_load_all(path.read_text()))
               print('OK', path)
           PY
