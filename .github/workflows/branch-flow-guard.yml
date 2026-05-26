@@ -1,0 +1,80 @@
+name: branch-flow-guard
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: branch-flow-guard-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Verify PR base/head pairing
+        env:
+          BASE: ${{ github.base_ref }}
+          HEAD: ${{ github.head_ref }}
+          ACTOR: ${{ github.actor }}
+        run: |
+          set -euo pipefail
+
+          # Bypass automation bots
+          case "${ACTOR}" in
+            dependabot[bot]|github-actions[bot]|cursoragent)
+              echo "Bypass: automation actor ${ACTOR}"
+              exit 0
+              ;;
+          esac
+
+          case "${HEAD}" in
+            dependabot/*)
+              echo "Bypass: Dependabot head branch"
+              exit 0
+              ;;
+          esac
+
+          case "${BASE}" in
+            main)
+              case "${HEAD}" in
+                dev|release/v*|hotfix/*|auto/forward-merge-*)
+                  echo "OK: ${HEAD} -> main"
+                  exit 0
+                  ;;
+              esac
+              echo "ERROR: Only dev, release/v*, hotfix/*, or auto/forward-merge-* may merge into main (got ${HEAD})"
+              exit 1
+              ;;
+            dev)
+              case "${HEAD}" in
+                release/*)
+                  echo "ERROR: release/* must not merge into dev; use forward-merge from main"
+                  exit 1
+                  ;;
+                auto/forward-merge-*)
+                  echo "OK: ${HEAD} -> dev (automated forward-merge)"
+                  exit 0
+                  ;;
+              esac
+              echo "OK: ${HEAD} -> dev"
+              ;;
+            release/*)
+              case "${HEAD}" in
+                hotfix/*|dependabot/*)
+                  echo "OK: ${HEAD} -> ${BASE}"
+                  exit 0
+                  ;;
+              esac
+              echo "ERROR: Only hotfix/* or dependabot/* may merge into ${BASE} (got ${HEAD})"
+              exit 1
+              ;;
+            *)
+              echo "OK: no branch-flow restrictions for base ${BASE}"
+              ;;
+          esac
