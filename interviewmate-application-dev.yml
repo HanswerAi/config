@@ -16,8 +16,10 @@ spring:
           issuer-uri: https://ydctjwgkjwhnxbqlzfgy.supabase.co/auth/v1
 
   datasource:
-    url: jdbc:postgresql://db.ydctjwgkjwhnxbqlzfgy.supabase.co:6543/postgres?sslmode=require
-    username: postgres
+    # OCI / IPv4-only hosts: Supavisor session pooler in us-east-1 (project region).
+    # Local laptops may use direct db.<ref>.supabase.co via application-dev.yml instead.
+    url: ${DATABASE_URL:jdbc:postgresql://aws-1-us-east-1.pooler.supabase.com:5432/postgres?sslmode=require}
+    username: ${DB_USER:postgres.ydctjwgkjwhnxbqlzfgy}
     password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
     hikari:
